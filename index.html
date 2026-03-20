@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="STRIDE">
 <meta name="theme-color" content="#080b0f">
-<link rel="manifest" href="manifest.json">
-<!-- Apple touch icons (generated via JS below since no PNG files) -->
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="https://placehold.co/192x192/e8ff47/000000?text=S">
 <title>STRIDE</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap');
@@ -772,8 +772,16 @@ function setPhase(p){document.getElementById('phBlock').classList.toggle('active
 function toggleOpt(k){opts[k]=!opts[k];document.getElementById('tog'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('on',opts[k]);if(lastLm){ctx.clearRect(0,0,overlay.width,overlay.height);drawOv(lastLm);}}
 
 // ── AI REPORT ─────────────────────────────────────────────────────────────────
+// IMPORTANT: Paste your Cloudflare Worker URL below after setting it up
+// See cloudflare-worker.js for instructions
+const WORKER_URL = 'PASTE_YOUR_WORKER_URL_HERE';
+
 async function generateReport() {
-  if(!metricsSnapshot){alert('Analyze a video first.');return;}
+  if(!metricsSnapshot){alert('Analyze a video first — scrub through the video so pose is detected.');return;}
+  if(WORKER_URL==='PASTE_YOUR_WORKER_URL_HERE'){
+    alert('AI Report needs a Cloudflare Worker set up first.\n\nSee the cloudflare-worker.js file for step-by-step instructions — it takes about 3 minutes.');
+    return;
+  }
   const btn=document.getElementById('genBtn'),sp=document.getElementById('genSpinner'),bt=document.getElementById('genBtnTxt');
   btn.disabled=true; sp.style.display='block'; bt.textContent='ANALYZING…';
   const m=metricsSnapshot;
@@ -789,12 +797,12 @@ Cadence: ${m.cadence!==null?m.cadence+' spm':'not detected'} (elite: 270-330 spm
 Respond ONLY with valid JSON, no markdown, no backticks:
 {"overallScore":<0-100>,"techniqueScore":<0-100>,"powerScore":<0-100>,"subtitle":"<one sentence form summary>","strengths":[{"title":"<title>","body":"<2-3 sentences>","drill":"<specific drill>"},{"title":"<title>","body":"<2-3 sentences>","drill":"<drill>"}],"improvements":[{"title":"<title>","body":"<2-3 sentences>","drill":"<corrective drill with sets/reps>"},{"title":"<title>","body":"<2-3 sentences>","drill":"<drill>"}],"drills":[{"title":"<drill name>","body":"<how to perform and what it targets>","drill":"<sets/reps/frequency>"}]}`;
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const data=await res.json();
     const text=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
     renderReport(JSON.parse(text));
   } catch(e) {
-    bt.textContent='↻ RETRY'; alert('Report failed. Check connection and try again.');
+    bt.textContent='↻ RETRY'; alert('Report failed. Make sure your Cloudflare Worker URL is correct and you have internet.');
   } finally { btn.disabled=false; sp.style.display='none'; }
 }
 
