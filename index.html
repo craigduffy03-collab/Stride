@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STRIDE">
+<meta name="theme-color" content="#080b0f">
+<link rel="manifest" href="manifest.json">
+<!-- Apple touch icons (generated via JS below since no PNG files) -->
+<title>STRIDE</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap');
+
+:root {
+  --bg: #080b0f;
+  --surface: #0e1318;
+  --surface2: #151c24;
+  --accent: #e8ff47;
+  --accent2: #47c8ff;
+  --text: #f0f4f8;
+  --muted: #5a6a7a;
+  --border: #1e2a35;
+  --good: #47ff9c;
+  --warn: #ffb347;
+  --bad: #ff4747;
+  --header-h: 52px;
+  --nav-h: 56px;
+  --status-h: 30px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Barlow Condensed', sans-serif; }
+
+/* ── HEADER ── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--header-h);
+  padding-top: env(safe-area-inset-top, 0px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding-left: 16px; padding-right: 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 24px; font-weight: 900; letter-spacing: 4px; color: var(--accent); text-shadow: 0 0 18px rgba(232,255,71,.35); }
+.logo small { display: block; font-size: 9px; font-weight: 300; letter-spacing: 2px; color: var(--muted); margin-top: -3px; }
+#fpsLbl { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+
+/* ── STATUS ── */
+.status-bar {
+  position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 190;
+  height: var(--status-h);
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px;
+  background: var(--surface2); border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted);
+}
+.sdot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all .3s; }
+.sdot.ready   { background: var(--good); box-shadow: 0 0 6px var(--good); }
+.sdot.working { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: blink 1s infinite; }
+.sdot.error   { background: var(--bad); }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  display: flex;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border: none; background: none; color: var(--muted); cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; transition: color .2s; padding-bottom: 2px;
+}
+.nav-btn .ni { font-size: 22px; line-height: 1; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active .ni { filter: drop-shadow(0 0 5px rgba(232,255,71,.5)); }
+
+/* ── PAGES ── */
+.page {
+  position: fixed;
+  top: calc(var(--header-h) + var(--status-h));
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  left: 0; right: 0;
+  overflow-y: auto; overflow-x: hidden;
+  display: none;
+  -webkit-overflow-scrolling: touch;
+}
+.page.active { display: flex; flex-direction: column; }
+
+/* ── PAGE: ANALYZE ── */
+#pageAnalyze { background: #000; }
+
+.drop-zone {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 32px 24px; text-align: center; cursor: pointer;
+  border: 2px dashed var(--border); margin: 20px; border-radius: 14px;
+  transition: border-color .2s, background .2s;
+}
+.drop-zone:active, .drop-zone.drag-over { border-color: var(--accent); background: rgba(232,255,71,.03); }
+.drop-zone .dz-icon { font-size: 52px; line-height: 1; }
+.drop-zone h2 { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+.drop-zone p  { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 260px; }
+
+.btn-main {
+  padding: 14px 36px; background: var(--accent); color: #000; border: none;
+  border-radius: 8px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 17px; font-weight: 700; letter-spacing: 2px; cursor: pointer;
+  touch-action: manipulation;
+}
+.btn-main:active { opacity: .85; }
+
+.tip-small { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+/* Install banner */
+.install-banner {
+  display: none; align-items: center; gap: 10px;
+  margin: 0 20px 0; padding: 12px 14px;
+  background: rgba(232,255,71,.08); border: 1px solid rgba(232,255,71,.25);
+  border-radius: 10px; cursor: pointer;
+}
+.install-banner.show { display: flex; }
+.install-banner p { font-size: 13px; color: var(--accent); flex: 1; line-height: 1.4; }
+.install-banner p small { display: block; color: var(--muted); font-size: 11px; }
+.install-banner .ib-btn {
+  background: var(--accent); color: #000; border: none; border-radius: 6px;
+  padding: 8px 14px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 1px; cursor: pointer; flex-shrink: 0;
+}
+
+/* Video wrapper */
+.video-wrapper {
+  flex: 1; position: relative; display: none; background: #000; min-height: 200px;
+}
+.video-wrapper.visible { display: block; }
+#vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); max-width: 100%; max-height: 100%; }
+#overlay { position: absolute; pointer-events: none; }
+
+/* Controls */
+.controls {
+  display: none; flex-direction: column; gap: 8px;
+  padding: 10px 14px 12px; background: rgba(0,0,0,.92);
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.controls.visible { display: flex; }
+
+.scrub {
+  width: 100%; -webkit-appearance: none; height: 5px;
+  border-radius: 3px; background: rgba(255,255,255,.15); outline: none; cursor: pointer;
+}
+.scrub::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--accent); cursor: pointer;
+  box-shadow: 0 0 8px rgba(232,255,71,.6);
+}
+
+.ctrl-row { display: flex; align-items: center; gap: 8px; }
+.ctrl-btn {
+  background: none; border: 1px solid var(--border); color: var(--text);
+  cursor: pointer; font-size: 13px; padding: 9px 12px; border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: 1px;
+  touch-action: manipulation; flex-shrink: 0;
+}
+.ctrl-btn:active { border-color: var(--accent); color: var(--accent); }
+.ctrl-btn.active-btn { background: var(--accent); color: #000; border-color: var(--accent); }
+.speed-sel {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 9px 6px; border-radius: 6px; font-size: 11px;
+  font-family: 'JetBrains Mono', monospace; flex-shrink: 0;
+}
+.time-lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+.btn-change {
+  margin-left: auto; background: none; border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; font-size: 11px; padding: 9px 10px; border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px; touch-action: manipulation;
+}
+
+/* ── PAGE: METRICS ── */
+#pageMetrics { background: var(--bg); }
+.metrics-scroll { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+.section-hd { font-size: 10px; letter-spacing: 3px; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-bottom: 10px; }
+
+.phases { display: flex; flex-wrap: wrap; gap: 6px; }
+.phase-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); transition: all .25s;
+}
+.phase-badge.active { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 10px rgba(232,255,71,.12); }
+.phase-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.metric {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-left: 3px solid var(--muted); border-radius: 8px; padding: 12px 12px 10px; transition: border-color .3s;
+}
+.metric.good { border-left-color: var(--good); }
+.metric.warn { border-left-color: var(--warn); }
+.metric.bad  { border-left-color: var(--bad); }
+.m-name { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; font-family: 'JetBrains Mono', monospace; }
+.m-val  { font-size: 32px; font-weight: 900; line-height: 1.1; }
+.m-unit { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 2px; }
+.m-range { font-size: 9px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; line-height: 1.4; }
+.m-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.m-bar-fill { height: 100%; border-radius: 2px; width: 0%; transition: width .3s, background .3s; background: var(--muted); }
+.metric.good .m-bar-fill { background: var(--good); }
+.metric.warn .m-bar-fill { background: var(--warn); }
+.metric.bad  .m-bar-fill { background: var(--bad); }
+
+.no-data-msg { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); padding: 12px 0; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+.tog { width: 40px; height: 22px; background: var(--border); border-radius: 11px; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.tog.on { background: var(--accent); }
+.tog::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#000; transition:transform .2s; }
+.tog.on::after { transform: translateX(18px); }
+
+.calib-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 10px 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 15px; margin-top: 8px;
+}
+.calib-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* ── PAGE: AI REPORT ── */
+#pageReport { background: var(--bg); }
+.report-scroll { padding: 16px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+
+.report-hero {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; text-align: center;
+}
+.report-hero h2 { font-size: 26px; font-weight: 900; letter-spacing: 2px; margin-bottom: 6px; }
+.report-hero p  { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+.btn-generate {
+  width: 100%; padding: 16px; background: var(--accent); color: #000; border: none;
+  border-radius: 10px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px; font-weight: 700; letter-spacing: 2px; cursor: pointer;
+  touch-action: manipulation; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-generate:active { opacity: .85; }
+.btn-generate:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+.gen-spinner { width: 18px; height: 18px; border: 2px solid rgba(0,0,0,.3); border-top-color: #000; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.score-row { display: flex; gap: 10px; }
+.score-card {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 10px; text-align: center;
+}
+.sc-label { font-size: 9px; color: var(--muted); letter-spacing: 2px; font-family: 'JetBrains Mono', monospace; }
+.sc-num { font-size: 40px; font-weight: 900; line-height: 1; }
+.sc-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.score-card.good .sc-num { color: var(--good); }
+.score-card.warn .sc-num { color: var(--warn); }
+.score-card.bad  .sc-num { color: var(--bad); }
+
+.sugg-section { display: flex; flex-direction: column; gap: 10px; }
+.sugg-hd { font-size: 10px; letter-spacing: 3px; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+.sugg-card {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.sugg-card.strength { border-left: 3px solid var(--good); }
+.sugg-card.improve  { border-left: 3px solid var(--warn); }
+.sugg-inner { padding: 14px; }
+.sugg-tag {
+  display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 10px;
+  font-weight: 700; letter-spacing: 1.5px; margin-bottom: 8px;
+}
+.sugg-card.strength .sugg-tag { background: rgba(71,255,156,.12); color: var(--good); }
+.sugg-card.improve  .sugg-tag { background: rgba(255,179,71,.12); color: var(--warn); }
+.sugg-title { font-size: 18px; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
+.sugg-body { font-size: 14px; color: var(--muted); line-height: 1.6; font-weight: 400; font-family: sans-serif; }
+.sugg-drill {
+  padding: 10px 14px; background: rgba(255,255,255,.03); border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--accent2); font-family: 'JetBrains Mono', monospace;
+}
+.sugg-drill strong { display: block; font-size: 9px; letter-spacing: 2px; opacity: .6; margin-bottom: 3px; }
+
+.no-report {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 40px 24px; text-align: center; flex: 1;
+}
+.no-report .nr-icon { font-size: 52px; }
+.no-report h3 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+.no-report p { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 260px; }
+
+.report-note { font-size: 11px; color: var(--muted); text-align: center; padding: 8px 0; font-family: 'JetBrains Mono', monospace; line-height: 1.6; }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+input[type=file] { display: none; }
+.hidden { display: none !important; }
+
+/* Desktop side-by-side */
+@media (min-width: 768px) {
+  :root { --nav-h: 0px; }
+  .bottom-nav { display: none; }
+  .install-banner { margin: 0 0 0; }
+  .desktop-layout {
+    position: fixed;
+    top: calc(var(--header-h) + var(--status-h));
+    bottom: 0; left: 0; right: 0;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+  }
+  #pageAnalyze { position: static; display: flex; overflow: hidden; }
+  #pageMetrics, #pageReport {
+    position: static; border-left: 1px solid var(--border); overflow-y: auto;
+  }
+  #pageMetrics { display: flex !important; }
+  #pageReport  { display: none; }
+  .desktop-tabs { display: flex !important; }
+}
+
+.desktop-tabs {
+  display: none; gap: 4px;
+  background: var(--bg); border-radius: 6px; padding: 4px;
+}
+.dt-btn {
+  padding: 6px 16px; border: none; border-radius: 4px;
+  background: transparent; color: var(--muted);
+  font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer; transition: all .2s;
+}
+.dt-btn.active { background: var(--accent); color: #000; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">STRIDE<small>SPRINT FORM ANALYZER</small></div>
+  <div class="desktop-tabs" id="desktopTabs">
+    <button class="dt-btn active" onclick="desktopTab('metrics')">METRICS</button>
+    <button class="dt-btn" onclick="desktopTab('report')">AI REPORT</button>
+  </div>
+  <div id="fpsLbl"></div>
+</header>
+
+<div class="status-bar">
+  <div class="sdot" id="sDot"></div>
+  <span id="sTxt">Loading pose model…</span>
+</div>
+
+<div class="desktop-layout" id="desktopLayout">
+
+<!-- ══ ANALYZE ══ -->
+<div class="page active" id="pageAnalyze">
+
+  <!-- PWA install banner -->
+  <div class="install-banner" id="installBanner" onclick="installPWA()">
+    <p>Add STRIDE to your home screen<small>Tap to install as an app</small></p>
+    <button class="ib-btn">INSTALL</button>
+  </div>
+
+  <div class="drop-zone" id="dropZone"
+       onclick="document.getElementById('fileIn').click()"
+       ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <div class="dz-icon">🎬</div>
+    <h2>UPLOAD SPRINT VIDEO</h2>
+    <p>Side-profile, full body in frame gives the most accurate readings.</p>
+    <div class="btn-main">SELECT VIDEO</div>
+    <div class="tip-small">MP4 · MOV · WebM · drag &amp; drop</div>
+  </div>
+  <input type="file" id="fileIn" accept="video/*" onchange="loadVideo(event)">
+
+  <div class="video-wrapper" id="vWrap">
+    <video id="vid" crossorigin="anonymous" preload="auto" playsinline></video>
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <div class="controls" id="ctrlBar">
+    <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" step="1"
+           oninput="onScrubInput(this.value)"
+           onmousedown="scrubbing=true" onmouseup="onScrubEnd(this.value)"
+           ontouchstart="scrubbing=true" ontouchend="onScrubEnd(this.value)">
+    <div class="ctrl-row">
+      <button class="ctrl-btn" onclick="stepFrames(-1)">◀</button>
+      <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+      <button class="ctrl-btn" onclick="stepFrames(1)">▶</button>
+      <select class="speed-sel" onchange="vid.playbackRate=this.value">
+        <option value="0.1">0.1×</option>
+        <option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+      </select>
+      <span class="time-lbl" id="timeLbl">0.000s</span>
+      <button class="btn-change" onclick="changeVideo()">CHANGE</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ METRICS ══ -->
+<div class="page" id="pageMetrics">
+<div class="metrics-scroll">
+
+  <div>
+    <div class="section-hd">SPRINT PHASE</div>
+    <div class="phases">
+      <div class="phase-badge" id="phBlock"><div class="phase-dot"></div>BLOCK DRIVE</div>
+      <div class="phase-badge" id="phAccel"><div class="phase-dot"></div>ACCELERATION</div>
+      <div class="phase-badge" id="phMax"><div class="phase-dot"></div>MAX VELOCITY</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-hd">ANGLES</div>
+    <div id="noData1" class="no-data-msg">Upload a video to begin</div>
+    <div id="angleCards" class="hidden metric-grid">
+      <div class="metric" id="cShin">
+        <div class="m-name">SHIN ANGLE</div>
+        <div class="m-val" id="vShin">—<span class="m-unit">°</span></div>
+        <div class="m-range" id="rShin">Target: 45–55°</div>
+        <div class="m-bar"><div class="m-bar-fill" id="bShin"></div></div>
+      </div>
+      <div class="metric" id="cTorso">
+        <div class="m-name">TORSO ANGLE</div>
+        <div class="m-val" id="vTorso">—<span class="m-unit">°</span></div>
+        <div class="m-range" id="rTorso">Target: 50–65°</div>
+        <div class="m-bar"><div class="m-bar-fill" id="bTorso"></div></div>
+      </div>
+      <div class="metric" id="cKnee">
+        <div class="m-name">SWING KNEE</div>
+        <div class="m-val" id="vKnee">—<span class="m-unit">°</span></div>
+        <div class="m-range">Target: 90–120°</div>
+        <div class="m-bar"><div class="m-bar-fill" id="bKnee"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-hd">STRIDE & CADENCE</div>
+    <div id="noData2" class="no-data-msg">Upload a video to begin</div>
+    <div id="strideCards" class="hidden metric-grid">
+      <div class="metric" id="cStride">
+        <div class="m-name">STRIDE LENGTH</div>
+        <div class="m-val" id="vStride">—<span class="m-unit">m</span></div>
+        <div class="m-range">Elite: 1.8–2.8m</div>
+        <div class="m-bar"><div class="m-bar-fill" id="bStride"></div></div>
+      </div>
+      <div class="metric" id="cCad">
+        <div class="m-name">CADENCE</div>
+        <div class="m-val" id="vCad">—<span class="m-unit">spm</span></div>
+        <div class="m-range">Elite: 270–330</div>
+        <div class="m-bar"><div class="m-bar-fill" id="bCad"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-hd">OVERLAYS</div>
+    <div class="toggle-row"><span>Skeleton</span><div class="tog on" id="togSkeleton" onclick="toggleOpt('skeleton')"></div></div>
+    <div class="toggle-row"><span>Angle Arcs</span><div class="tog on" id="togAngles" onclick="toggleOpt('angles')"></div></div>
+    <div class="toggle-row"><span>Joint Labels</span><div class="tog on" id="togLabels" onclick="toggleOpt('labels')"></div></div>
+    <div class="toggle-row"><span>Ground Line</span><div class="tog on" id="togGround" onclick="toggleOpt('ground')"></div></div>
+  </div>
+
+  <div>
+    <div class="section-hd">CALIBRATION</div>
+    <div class="calib-note">Your height for real-world stride measurement</div>
+    <input type="number" class="calib-input" id="heightIn" value="180" min="140" max="220" placeholder="Height cm">
+  </div>
+
+</div>
+</div>
+
+<!-- ══ AI REPORT ══ -->
+<div class="page" id="pageReport">
+<div class="report-scroll" id="reportScroll">
+
+  <div class="no-report" id="noReport">
+    <div class="nr-icon">🧠</div>
+    <h3>AI FORM REPORT</h3>
+    <p>Analyze a video first, then generate your personalized sprint coaching report.</p>
+  </div>
+
+  <div id="reportReady" class="hidden" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="report-hero">
+      <h2>FORM REPORT</h2>
+      <p id="reportSubtitle">Tap Generate to get your personalized coaching analysis.</p>
+    </div>
+    <button class="btn-generate" id="genBtn" onclick="generateReport()">
+      <div class="gen-spinner" id="genSpinner"></div>
+      <span id="genBtnTxt">⚡ GENERATE AI REPORT</span>
+    </button>
+    <div id="scoreSection" class="hidden">
+      <div class="section-hd" style="margin-bottom:10px;">OVERALL SCORES</div>
+      <div class="score-row" id="scoreRow"></div>
+    </div>
+    <div id="suggSection" class="hidden">
+      <div class="sugg-section" id="strengthsList"><div class="sugg-hd">✅ STRENGTHS</div></div>
+      <div class="sugg-section" style="margin-top:14px;" id="improveList"><div class="sugg-hd">⚠️ AREAS TO IMPROVE</div></div>
+      <div class="sugg-section" style="margin-top:14px;" id="drillsList"><div class="sugg-hd">🏃 RECOMMENDED DRILLS</div></div>
+    </div>
+    <div class="report-note" id="reportNote" style="display:none;">
+      Analysis based on pose landmarks from your video. Best results with a true side-on camera angle.
+    </div>
+  </div>
+
+</div>
+</div>
+
+</div><!-- /desktop-layout -->
+
+<!-- ══ BOTTOM NAV ══ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="navAnalyze" onclick="switchPage('analyze')">
+    <span class="ni">🎬</span>ANALYZE
+  </button>
+  <button class="nav-btn" id="navMetrics" onclick="switchPage('metrics')">
+    <span class="ni">📐</span>METRICS
+  </button>
+  <button class="nav-btn" id="navReport" onclick="switchPage('report')">
+    <span class="ni">🧠</span>AI REPORT
+  </button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+<script>
+// ── PWA SETUP ─────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.log('SW:', e));
+  });
+}
+
+// Install prompt (Android Chrome / desktop)
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('show');
+  deferredPrompt = null;
+});
+async function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') document.getElementById('installBanner').classList.remove('show');
+    deferredPrompt = null;
+  }
+}
+
+// ── GLOBALS ───────────────────────────────────────────────────────────────────
+const vid     = document.getElementById('vid');
+const overlay = document.getElementById('overlay');
+const ctx     = overlay.getContext('2d');
+
+let poseModel=null, modelReady=false, isPlaying=false, scrubbing=false;
+let rafId=null, lastLm=null, analysing=false, metricsSnapshot=null;
+let stepTs=[], prevLY=null, prevRY=null, contactSide=null;
+let fpsCount=0, fpsTimer=performance.now();
+
+const opts = { skeleton:true, angles:true, labels:true, ground:true };
+const CONN = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[24,26],[25,27],[26,28],[27,29],[28,30],[29,31],[30,32]];
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+const isDesktop = () => window.innerWidth >= 768;
+function switchPage(p) {
+  if (isDesktop()) return;
+  ['analyze','metrics','report'].forEach(x => {
+    document.getElementById('page'+cap(x)).classList.toggle('active', x===p);
+    document.getElementById('nav'+cap(x)).classList.toggle('active', x===p);
+  });
+}
+function desktopTab(tab) {
+  document.querySelectorAll('.dt-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='metrics')||(i===1&&tab==='report')));
+  document.getElementById('pageMetrics').style.display = tab==='metrics'?'flex':'none';
+  document.getElementById('pageReport').style.display  = tab==='report'?'flex':'none';
+}
+function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(s,m) {
+  document.getElementById('sDot').className='sdot'+(s?' '+s:'');
+  document.getElementById('sTxt').textContent=m;
+}
+
+// ── INIT POSE ─────────────────────────────────────────────────────────────────
+function initPose() {
+  poseModel = new Pose({ locateFile: f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}` });
+  poseModel.setOptions({ modelComplexity:1, smoothLandmarks:true, enableSegmentation:false, minDetectionConfidence:.5, minTrackingConfidence:.5 });
+  poseModel.onResults(onResults);
+  poseModel.initialize()
+    .then(()=>{ modelReady=true; setStatus('ready','Model ready — upload a video to begin'); })
+    .catch(()=>setStatus('error','Model failed. Refresh and try again.'));
+}
+
+// ── FILE ──────────────────────────────────────────────────────────────────────
+function loadVideo(e) { _open(e.target.files[0]); }
+function onDragOver(e){ e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function onDragLeave() { document.getElementById('dropZone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault(); document.getElementById('dropZone').classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('video/'))_open(f);
+}
+function _open(file) {
+  if(!file) return;
+  pauseVid(); stepTs=[]; prevLY=null; prevRY=null; contactSide=null; metricsSnapshot=null;
+  document.getElementById('noReport').classList.remove('hidden');
+  document.getElementById('reportReady').classList.add('hidden');
+  document.getElementById('scoreSection').classList.add('hidden');
+  document.getElementById('suggSection').classList.add('hidden');
+  document.getElementById('reportNote').style.display='none';
+  vid.src=URL.createObjectURL(file); vid.load();
+  setStatus('working','Loading video…');
+  vid.onloadeddata=()=>{
+    document.getElementById('dropZone').style.display='none';
+    document.getElementById('vWrap').classList.add('visible');
+    document.getElementById('ctrlBar').classList.add('visible');
+    document.getElementById('scrub').max=Math.round(vid.duration*1000);
+    setStatus('ready','Video ready — scrub or press play');
+    vid.currentTime=0.001;
+  };
+  vid.onseeked=()=>{ syncTime(); if(!isPlaying)runAnalysis(); };
+}
+function changeVideo() {
+  pauseVid(); vid.src=''; ctx.clearRect(0,0,overlay.width,overlay.height);
+  document.getElementById('vWrap').classList.remove('visible');
+  document.getElementById('ctrlBar').classList.remove('visible');
+  document.getElementById('dropZone').style.display='flex';
+  document.getElementById('fileIn').value='';
+  lastLm=null; metricsSnapshot=null; clearMetrics();
+  setStatus('ready','Model ready — upload a video to begin');
+}
+
+// ── PLAYBACK ──────────────────────────────────────────────────────────────────
+function togglePlay() { isPlaying?pauseVid():playVid(); }
+function playVid() {
+  isPlaying=true;
+  document.getElementById('playBtn').textContent='⏸ PAUSE';
+  document.getElementById('playBtn').classList.add('active-btn');
+  vid.play(); rafLoop();
+}
+function pauseVid() {
+  isPlaying=false;
+  document.getElementById('playBtn').textContent='▶ PLAY';
+  document.getElementById('playBtn').classList.remove('active-btn');
+  vid.pause(); if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+}
+vid.onended=pauseVid;
+function rafLoop() { if(!isPlaying)return; syncTime(); runAnalysis(); rafId=requestAnimationFrame(rafLoop); }
+function onScrubInput(v) { const t=parseInt(v)/1000; document.getElementById('timeLbl').textContent=t.toFixed(3)+'s'; }
+function onScrubEnd(v) { scrubbing=false; pauseVid(); vid.currentTime=parseInt(v)/1000; }
+function stepFrames(d) { pauseVid(); vid.currentTime=Math.max(0,Math.min(vid.duration||0,vid.currentTime+d/30)); }
+function syncTime() {
+  const t=vid.currentTime;
+  document.getElementById('timeLbl').textContent=t.toFixed(3)+'s';
+  if(!scrubbing) document.getElementById('scrub').value=Math.round(t*1000);
+}
+
+// ── ANALYSIS ──────────────────────────────────────────────────────────────────
+async function runAnalysis() {
+  if(!modelReady||analysing||!vid.videoWidth) return;
+  analysing=true;
+  try { await poseModel.send({image:vid}); } catch(e){}
+  analysing=false;
+  fpsCount++;
+  if(performance.now()-fpsTimer>=1000){
+    document.getElementById('fpsLbl').textContent=fpsCount+' FPS';
+    fpsCount=0; fpsTimer=performance.now();
+  }
+}
+
+// ── RESULTS ───────────────────────────────────────────────────────────────────
+function onResults(res) {
+  fitCanvas(); ctx.clearRect(0,0,overlay.width,overlay.height);
+  if(!res.poseLandmarks||!res.poseLandmarks.length){
+    showData(false); setStatus('working','No pose detected — full body in frame?'); return;
+  }
+  setStatus('ready','Pose detected'); showData(true);
+  lastLm=res.poseLandmarks; drawOv(lastLm); computeMetrics(lastLm);
+  document.getElementById('noReport').classList.add('hidden');
+  document.getElementById('reportReady').classList.remove('hidden');
+}
+
+// ── CANVAS FIT ────────────────────────────────────────────────────────────────
+function fitCanvas() {
+  const wrap=document.getElementById('vWrap');
+  const wr=wrap.clientWidth,wh=wrap.clientHeight,vw=vid.videoWidth||wr,vh=vid.videoHeight||wh;
+  const sc=Math.min(wr/vw,wh/vh);
+  const dw=Math.round(vw*sc),dh=Math.round(vh*sc),dx=Math.round((wr-dw)/2),dy=Math.round((wh-dh)/2);
+  vid.style.cssText=`position:absolute;width:${dw}px;height:${dh}px;left:${dx}px;top:${dy}px;transform:none`;
+  overlay.width=dw; overlay.height=dh;
+  overlay.style.cssText=`position:absolute;width:${dw}px;height:${dh}px;left:${dx}px;top:${dy}px;pointer-events:none`;
+}
+
+// ── DRAWING ───────────────────────────────────────────────────────────────────
+const lp=(lm,i)=>({x:lm[i].x*overlay.width,y:lm[i].y*overlay.height});
+const vis=(lm,i)=>(lm[i].visibility||0)>0.35;
+
+function drawOv(lm) {
+  if(opts.ground)   drawGround(lm);
+  if(opts.skeleton) drawSkel(lm);
+  if(opts.angles)   drawArcs(lm);
+  if(opts.labels)   drawLabels(lm);
+}
+function drawGround(lm){const gy=Math.max(lp(lm,27).y,lp(lm,28).y)+8;ctx.save();ctx.strokeStyle='rgba(232,255,71,.2)';ctx.lineWidth=1;ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(overlay.width,gy);ctx.stroke();ctx.restore();}
+function drawSkel(lm){ctx.save();ctx.lineWidth=2;CONN.forEach(([a,b])=>{if(!vis(lm,a)||!vis(lm,b))return;const pa=lp(lm,a),pb=lp(lm,b);ctx.strokeStyle='rgba(71,200,255,.75)';ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();});[11,12,13,14,15,16,23,24,25,26,27,28].forEach(i=>{if(!vis(lm,i))return;const p=lp(lm,i);ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='rgba(71,200,255,.9)';ctx.lineWidth=1.5;ctx.stroke();});ctx.restore();}
+function drawArcs(lm){if(vis(lm,27)&&vis(lm,25))arcV(lp(lm,27),lp(lm,25),'#e8ff47');if(vis(lm,23)&&vis(lm,11))arcV(lp(lm,23),lp(lm,11),'#ff6b35');const ks=hk(lm);if(ks==='L'&&vis(lm,23)&&vis(lm,25)&&vis(lm,27))arc3(lp(lm,23),lp(lm,25),lp(lm,27),'#47ff9c');else if(ks==='R'&&vis(lm,24)&&vis(lm,26)&&vis(lm,28))arc3(lp(lm,24),lp(lm,26),lp(lm,28),'#47ff9c');}
+function arcV(bot,top,c){const dx=top.x-bot.x,dy=bot.y-top.y,deg=Math.atan2(Math.abs(dx),dy)*180/Math.PI,r=32,ea=Math.atan2(top.y-bot.y,top.x-bot.x);ctx.save();ctx.strokeStyle=c;ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(bot.x,bot.y);ctx.lineTo(top.x,top.y);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(bot.x,bot.y,r,-Math.PI/2,ea);ctx.stroke();ctx.fillStyle=c;ctx.globalAlpha=1;ctx.font='bold 11px JetBrains Mono,monospace';ctx.fillText(deg.toFixed(0)+'°',bot.x+r+5,bot.y-2);ctx.restore();}
+function arc3(a,b,c,col){const ang=ab3(a,b,c),r=24,a1=Math.atan2(a.y-b.y,a.x-b.x),a2=Math.atan2(c.y-b.y,c.x-b.x),mid=(a1+a2)/2;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.beginPath();ctx.arc(b.x,b.y,r,a1,a2);ctx.stroke();ctx.fillStyle=col;ctx.globalAlpha=1;ctx.font='bold 11px JetBrains Mono,monospace';ctx.fillText(ang.toFixed(0)+'°',b.x+(r+5)*Math.cos(mid),b.y+(r+5)*Math.sin(mid));ctx.restore();}
+function drawLabels(lm){const M={11:'L.SH',12:'R.SH',23:'L.HIP',24:'R.HIP',25:'L.KN',26:'R.KN',27:'L.ANK',28:'R.ANK'};ctx.save();ctx.font='9px JetBrains Mono,monospace';ctx.fillStyle='rgba(255,255,255,.5)';Object.entries(M).forEach(([i,l])=>{if(!vis(lm,+i))return;const p=lp(lm,+i);ctx.fillText(l,p.x+6,p.y-4);});ctx.restore();}
+
+// ── MATH ──────────────────────────────────────────────────────────────────────
+function ab3(a,v,c){const v1={x:a.x-v.x,y:a.y-v.y},v2={x:c.x-v.x,y:c.y-v.y},d=v1.x*v2.x+v1.y*v2.y,m=Math.sqrt(v1.x**2+v1.y**2)*Math.sqrt(v2.x**2+v2.y**2);return m===0?0:Math.acos(Math.max(-1,Math.min(1,d/m)))*180/Math.PI;}
+function afv(top,bot){return Math.atan2(Math.abs(top.x-bot.x),bot.y-top.y)*180/Math.PI;}
+function hk(lm){if(!vis(lm,25)&&!vis(lm,26))return null;if(!vis(lm,25))return'R';if(!vis(lm,26))return'L';return lm[25].y<lm[26].y?'L':'R';}
+
+// ── METRICS ───────────────────────────────────────────────────────────────────
+function computeMetrics(lm) {
+  const height=parseFloat(document.getElementById('heightIn').value)||180;
+  const bodyPx=(Math.max(lm[27].y,lm[28].y)-lm[0].y)*overlay.height;
+  const ppm=bodyPx>20?(height/100)/(bodyPx/overlay.height)*overlay.height:null;
+  let shin=null,torso=null,knee=null,stride=null;
+  if(vis(lm,27)&&vis(lm,25))shin=afv(lp(lm,25),lp(lm,27));
+  if(vis(lm,23)&&vis(lm,11))torso=afv(lp(lm,11),lp(lm,23));
+  const ks=hk(lm);
+  if(ks==='L'&&vis(lm,23)&&vis(lm,25)&&vis(lm,27))knee=ab3(lp(lm,23),lp(lm,25),lp(lm,27));
+  else if(ks==='R'&&vis(lm,24)&&vis(lm,26)&&vis(lm,28))knee=ab3(lp(lm,24),lp(lm,26),lp(lm,28));
+  if(ppm&&vis(lm,27)&&vis(lm,28))stride=+((Math.abs(lm[27].x-lm[28].x)*overlay.width)/ppm).toFixed(2);
+  const ly=lm[27].y,ry=lm[28].y; let cadence=null;
+  if(prevLY!==null&&isPlaying){
+    if(Math.abs(ly-prevLY)<0.004&&ly>0.55&&contactSide!=='L'){contactSide='L';stepTs.push(performance.now());if(stepTs.length>10)stepTs.shift();}
+    else if(Math.abs(ry-prevRY)<0.004&&ry>0.55&&contactSide!=='R'){contactSide='R';stepTs.push(performance.now());if(stepTs.length>10)stepTs.shift();}
+    if(stepTs.length>=3){let s=0;for(let i=1;i<stepTs.length;i++)s+=stepTs[i]-stepTs[i-1];cadence=Math.round(60000/(s/(stepTs.length-1)));}
+  }
+  prevLY=ly; prevRY=ry;
+  let phase='accel';
+  if(torso!==null){if(torso>48)phase='block';else if(torso<18)phase='max';}
+  setPhase(phase);
+  const sT=phase==='block'?[45,55]:phase==='accel'?[60,75]:[78,88];
+  const tT=phase==='block'?[48,65]:phase==='accel'?[28,48]:[5,18];
+  setMetric('Shin',shin,'°',sT[0],sT[1],15,90,phase==='block'?'45–55° (block)':phase==='accel'?'60–75° (accel)':'78–88° (upright)');
+  setMetric('Torso',torso,'°',tT[0],tT[1],0,85,phase==='block'?'48–65° (block)':phase==='accel'?'28–48° (accel)':'5–18° (upright)');
+  setMetric('Knee',knee,'°',90,120,45,175,'90–120° swing knee');
+  setMetric('Stride',stride,'m',1.8,2.6,0.3,4,'Elite: 1.8–2.8m');
+  setMetric('Cad',cadence,'spm',270,330,140,420,'Elite: 270–330 spm');
+  metricsSnapshot={shin:shin?+shin.toFixed(1):null,torso:torso?+torso.toFixed(1):null,knee:knee?+knee.toFixed(1):null,stride,cadence,phase,height};
+}
+
+function setMetric(key,val,unit,gL,gH,min,max,rt){
+  const card=document.getElementById('c'+key),ve=document.getElementById('v'+key),be=document.getElementById('b'+key),re=document.getElementById('r'+key);
+  if(val===null||val===undefined){ve.innerHTML=`—<span class="m-unit">${unit}</span>`;if(card)card.className='metric';if(be)be.style.width='0%';return;}
+  const n=parseFloat(val);
+  ve.innerHTML=`${Number.isInteger(n)?n:n.toFixed(2)}<span class="m-unit">${unit}</span>`;
+  if(re&&rt)re.textContent=rt;
+  if(be)be.style.width=Math.max(0,Math.min(100,(n-min)/(max-min)*100))+'%';
+  let cls='metric';
+  if(n>=gL&&n<=gH)cls+=' good';else if(n<gL*.82||n>gH*1.2)cls+=' bad';else cls+=' warn';
+  if(card)card.className=cls;
+}
+function showData(y){['noData1','noData2'].forEach(id=>document.getElementById(id).classList.toggle('hidden',y));['angleCards','strideCards'].forEach(id=>document.getElementById(id).classList.toggle('hidden',!y));}
+function clearMetrics(){showData(false);['Shin','Torso','Knee','Stride','Cad'].forEach(k=>setMetric(k,null,'',0,0,0,1,''));setPhase(null);}
+function setPhase(p){document.getElementById('phBlock').classList.toggle('active',p==='block');document.getElementById('phAccel').classList.toggle('active',p==='accel');document.getElementById('phMax').classList.toggle('active',p==='max');}
+function toggleOpt(k){opts[k]=!opts[k];document.getElementById('tog'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('on',opts[k]);if(lastLm){ctx.clearRect(0,0,overlay.width,overlay.height);drawOv(lastLm);}}
+
+// ── AI REPORT ─────────────────────────────────────────────────────────────────
+async function generateReport() {
+  if(!metricsSnapshot){alert('Analyze a video first.');return;}
+  const btn=document.getElementById('genBtn'),sp=document.getElementById('genSpinner'),bt=document.getElementById('genBtnTxt');
+  btn.disabled=true; sp.style.display='block'; bt.textContent='ANALYZING…';
+  const m=metricsSnapshot;
+  const prompt=`You are an elite sprint coach AI. Analyze these pose-detected metrics and provide a coaching report.
+
+ATHLETE: Height ${m.height}cm | Phase: ${m.phase}
+Shin Angle: ${m.shin!==null?m.shin+'°':'not detected'} (targets: 45-55° block, 60-75° accel, 78-88° max vel)
+Torso Angle: ${m.torso!==null?m.torso+'°':'not detected'} (targets: 48-65° block, 28-48° accel, 5-18° max vel)
+Swing Knee: ${m.knee!==null?m.knee+'°':'not detected'} (target: 90-120°)
+Stride Length: ${m.stride!==null?m.stride+'m':'not detected'} (elite: 1.8-2.8m)
+Cadence: ${m.cadence!==null?m.cadence+' spm':'not detected'} (elite: 270-330 spm)
+
+Respond ONLY with valid JSON, no markdown, no backticks:
+{"overallScore":<0-100>,"techniqueScore":<0-100>,"powerScore":<0-100>,"subtitle":"<one sentence form summary>","strengths":[{"title":"<title>","body":"<2-3 sentences>","drill":"<specific drill>"},{"title":"<title>","body":"<2-3 sentences>","drill":"<drill>"}],"improvements":[{"title":"<title>","body":"<2-3 sentences>","drill":"<corrective drill with sets/reps>"},{"title":"<title>","body":"<2-3 sentences>","drill":"<drill>"}],"drills":[{"title":"<drill name>","body":"<how to perform and what it targets>","drill":"<sets/reps/frequency>"}]}`;
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    const text=data.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    renderReport(JSON.parse(text));
+  } catch(e) {
+    bt.textContent='↻ RETRY'; alert('Report failed. Check connection and try again.');
+  } finally { btn.disabled=false; sp.style.display='none'; }
+}
+
+function renderReport(r) {
+  document.getElementById('reportSubtitle').textContent=r.subtitle||'';
+  const sr=document.getElementById('scoreRow'); sr.innerHTML='';
+  [{label:'OVERALL',val:r.overallScore},{label:'TECHNIQUE',val:r.techniqueScore},{label:'POWER',val:r.powerScore}].forEach(s=>{
+    const cls=s.val>=75?'good':s.val>=55?'warn':'bad';
+    const sub=s.val>=75?'ELITE':s.val>=55?'DEVELOPING':'NEEDS WORK';
+    sr.innerHTML+=`<div class="score-card ${cls}"><div class="sc-label">${s.label}</div><div class="sc-num">${s.val}</div><div class="sc-sub">${sub}</div></div>`;
+  });
+  document.getElementById('scoreSection').classList.remove('hidden');
+  const sl=document.getElementById('strengthsList');
+  sl.innerHTML='<div class="sugg-hd">✅ STRENGTHS</div>';
+  (r.strengths||[]).forEach(s=>sl.innerHTML+=sc('strength',s));
+  const il=document.getElementById('improveList');
+  il.innerHTML='<div class="sugg-hd">⚠️ AREAS TO IMPROVE</div>';
+  (r.improvements||[]).forEach(s=>il.innerHTML+=sc('improve',s));
+  const dl=document.getElementById('drillsList');
+  dl.innerHTML='<div class="sugg-hd">🏃 RECOMMENDED DRILLS</div>';
+  (r.drills||[]).forEach(s=>dl.innerHTML+=sc('improve',s));
+  document.getElementById('suggSection').classList.remove('hidden');
+  document.getElementById('reportNote').style.display='block';
+  document.getElementById('reportScroll').scrollTop=0;
+  document.getElementById('genBtnTxt').textContent='↻ REGENERATE REPORT';
+}
+function sc(type,s){return`<div class="sugg-card ${type}"><div class="sugg-inner"><div class="sugg-tag">${type==='strength'?'STRENGTH':'IMPROVE'}</div><div class="sugg-title">${s.title}</div><div class="sugg-body">${s.body}</div></div>${s.drill?`<div class="sugg-drill"><strong>DRILL / PRESCRIPTION</strong>${s.drill}</div>`:''}</div>`;}
+
+// ── RESIZE ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{if(lastLm){fitCanvas();ctx.clearRect(0,0,overlay.width,overlay.height);drawOv(lastLm);}});
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+initPose();
+if(isDesktop()){document.getElementById('pageAnalyze').classList.add('active');document.getElementById('pageMetrics').classList.add('active');}
+</script>
+</body>
+</html>
